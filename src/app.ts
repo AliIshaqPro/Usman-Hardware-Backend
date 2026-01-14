@@ -5,8 +5,10 @@ import apiHistoryRoutes from './modules/reports/api-history.routes.js';
 import auditRoutes from './modules/audit-logs/audit.routes.js';
 import employeeRoutes from './modules/employees/employees.routes.js';
 import accountsRoutes from './modules/accounts/accounts.routes.js';
+
 import financeRoutes from './modules/finance/finance.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
+import dashboardRoutes from './modules/reports/dashboard.routes.js';
 import inventoryRoutes from './modules/inventory/inventory.routes.js';
 import { setFastifyInstance as setAuditFastifyInstance } from './modules/audit-logs/audit.service.js';
 import dbPlugin from './plugins/db.plugin.js';
@@ -25,6 +27,7 @@ export async function buildApp() {
   app.register(inventoryRoutes, { prefix });
   app.register(financeRoutes, { prefix });
   app.register(reportsRoutes, { prefix });
+  app.register(dashboardRoutes, { prefix });
   app.register(employeeRoutes, { prefix });
   app.register(accountsRoutes, { prefix });
 
