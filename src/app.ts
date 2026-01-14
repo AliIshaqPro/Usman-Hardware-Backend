@@ -12,6 +12,7 @@ import dashboardRoutes from './modules/reports/dashboard.routes.js';
 import inventoryRoutes from './modules/inventory/inventory.routes.js';
 import { setFastifyInstance as setAuditFastifyInstance } from './modules/audit-logs/audit.service.js';
 import dbPlugin from './plugins/db.plugin.js';
+import outsourcingRoutes from './modules/outsourcing/outsourcing.routes.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true })
@@ -30,6 +31,7 @@ export async function buildApp() {
   app.register(dashboardRoutes, { prefix });
   app.register(employeeRoutes, { prefix });
   app.register(accountsRoutes, { prefix });
+  app.register(outsourcingRoutes, { prefix });
 
   // Set Fastify instance for services
   setFastifyInstance(app)
