@@ -3,6 +3,7 @@ import monthlyReportsRoutes from './modules/reports/monthly-reports.routes.js';
 import { setFastifyInstance } from './modules/reports/reports.service.js';
 import apiHistoryRoutes from './modules/reports/api-history.routes.js';
 import auditRoutes from './modules/audit-logs/audit.routes.js';
+import employeeRoutes from './modules/employees/employees.routes.js';
 import financeRoutes from './modules/finance/finance.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
 import inventoryRoutes from './modules/inventory/inventory.routes.js';
@@ -23,6 +24,7 @@ export async function buildApp() {
   app.register(inventoryRoutes, { prefix });
   app.register(financeRoutes, { prefix });
   app.register(reportsRoutes, { prefix });
+  app.register(employeeRoutes, { prefix });
 
   // Set Fastify instance for services
   setFastifyInstance(app)
