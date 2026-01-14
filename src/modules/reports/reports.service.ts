@@ -40,31 +40,31 @@ interface MonthlyTopCustomersParams {
  */
 export async function getMonthlyProductSalesReport(params: MonthlyProductSalesParams) {
   const { year, month, limit, offset } = params;
-  
+
   let whereConditions: string[] = ['1=1'];
   let queryParams: any[] = [];
-  
+
   if (year) {
     whereConditions.push('year = ?');
     queryParams.push(year);
   }
-  
+
   if (month) {
     whereConditions.push('month = ?');
     queryParams.push(month);
   }
-  
+
   queryParams.push(limit, offset);
-  
+
   const whereClause = whereConditions.join(' AND ');
-  
+
   const query = `
     SELECT * FROM vw_monthly_product_sales_report 
     WHERE ${whereClause} 
     ORDER BY year DESC, month DESC, total_revenue DESC 
     LIMIT ? OFFSET ?
   `;
-  
+
   const [rows] = await fastifyInstance.mysql.query(query, queryParams);
   return rows;
 }
@@ -74,36 +74,36 @@ export async function getMonthlyProductSalesReport(params: MonthlyProductSalesPa
  */
 export async function getMonthlyCustomerPurchaseReport(params: MonthlyCustomerPurchaseParams) {
   const { year, month, customer_type, limit, offset } = params;
-  
+
   let whereConditions: string[] = ['1=1'];
   let queryParams: any[] = [];
-  
+
   if (year) {
     whereConditions.push('year = ?');
     queryParams.push(year);
   }
-  
+
   if (month) {
     whereConditions.push('month = ?');
     queryParams.push(month);
   }
-  
+
   if (customer_type) {
     whereConditions.push('customer_type = ?');
     queryParams.push(customer_type);
   }
-  
+
   queryParams.push(limit, offset);
-  
+
   const whereClause = whereConditions.join(' AND ');
-  
+
   const query = `
     SELECT * FROM vw_monthly_customer_purchase_report 
     WHERE ${whereClause} 
     ORDER BY year DESC, month DESC, total_purchase_value DESC 
     LIMIT ? OFFSET ?
   `;
-  
+
   const [rows] = await fastifyInstance.mysql.query(query, queryParams);
   return rows;
 }
@@ -113,36 +113,36 @@ export async function getMonthlyCustomerPurchaseReport(params: MonthlyCustomerPu
  */
 export async function getMonthlyTopProducts(params: MonthlyTopProductsParams) {
   const { year, month, category, limit } = params;
-  
+
   let whereConditions: string[] = ['1=1'];
   let queryParams: any[] = [];
-  
+
   if (year) {
     whereConditions.push('year = ?');
     queryParams.push(year);
   }
-  
+
   if (month) {
     whereConditions.push('month = ?');
     queryParams.push(month);
   }
-  
+
   if (category) {
     whereConditions.push('category_name = ?');
     queryParams.push(category);
   }
-  
+
   queryParams.push(limit);
-  
+
   const whereClause = whereConditions.join(' AND ');
-  
+
   const query = `
     SELECT * FROM vw_monthly_top_products 
     WHERE ${whereClause} 
     ORDER BY year DESC, month DESC, total_revenue DESC 
     LIMIT ?
   `;
-  
+
   const [rows] = await fastifyInstance.mysql.query(query, queryParams);
   return rows;
 }
@@ -152,36 +152,36 @@ export async function getMonthlyTopProducts(params: MonthlyTopProductsParams) {
  */
 export async function getMonthlyTopCustomers(params: MonthlyTopCustomersParams) {
   const { year, month, customer_type, limit } = params;
-  
+
   let whereConditions: string[] = ['1=1'];
   let queryParams: any[] = [];
-  
+
   if (year) {
     whereConditions.push('year = ?');
     queryParams.push(year);
   }
-  
+
   if (month) {
     whereConditions.push('month = ?');
     queryParams.push(month);
   }
-  
+
   if (customer_type) {
     whereConditions.push('customer_type = ?');
     queryParams.push(customer_type);
   }
-  
+
   queryParams.push(limit);
-  
+
   const whereClause = whereConditions.join(' AND ');
-  
+
   const query = `
     SELECT * FROM vw_monthly_top_customers 
     WHERE ${whereClause} 
     ORDER BY year DESC, month DESC, total_purchase_value DESC 
     LIMIT ?
   `;
-  
+
   const [rows] = await fastifyInstance.mysql.query(query, queryParams);
   return rows;
 }
@@ -191,7 +191,7 @@ export async function getMonthlyTopCustomers(params: MonthlyTopCustomersParams) 
 export async function getProductSalesHistory(productId: number) {
   // Check if product exists
   const [productCheck]: any = await fastifyInstance.mysql.query(
-    'SELECT id FROM ims_products WHERE id = ?',
+    'SELECT id FROM uh_ims_products WHERE id = ?',
     [productId]
   );
 
@@ -242,12 +242,12 @@ export async function getProductSalesHistory(productId: number) {
         ))
       ) as profit,
       sup.name as outsourcing_supplier_name
-    FROM ims_sale_items si
-    JOIN ims_sales s ON si.sale_id = s.id
-    JOIN ims_products p ON si.product_id = p.id
-    LEFT JOIN ims_customers c ON s.customer_id = c.id
-    LEFT JOIN ims_suppliers sup ON si.outsourcing_supplier_id = sup.id
-    LEFT JOIN ims_profit prof ON (
+    FROM uh_ims_sale_items si
+    JOIN uh_ims_sales s ON si.sale_id = s.id
+    JOIN uh_ims_products p ON si.product_id = p.id
+    LEFT JOIN uh_ims_customers c ON s.customer_id = c.id
+    LEFT JOIN uh_ims_suppliers sup ON si.outsourcing_supplier_id = sup.id
+    LEFT JOIN uh_ims_profit prof ON (
       prof.reference_id = s.id 
       AND prof.reference_type = 'sale' 
       AND prof.product_id = si.product_id
@@ -364,7 +364,7 @@ export async function getProductSalesHistory(productId: number) {
 
   // Get product info
   const [productInfo]: any = await fastifyInstance.mysql.query(
-    'SELECT id, name, sku, cost_price, price, stock, unit FROM ims_products WHERE id = ?',
+    'SELECT id, name, sku, cost_price, price, stock, unit FROM uh_ims_products WHERE id = ?',
     [productId]
   );
 
@@ -391,7 +391,7 @@ export async function getProductSalesHistory(productId: number) {
 export async function getCustomerOrderHistory(customerId: number) {
   // Check if customer exists
   const [customerCheck]: any = await fastifyInstance.mysql.query(
-    'SELECT id FROM ims_customers WHERE id = ?',
+    'SELECT id FROM uh_ims_customers WHERE id = ?',
     [customerId]
   );
 
@@ -401,7 +401,7 @@ export async function getCustomerOrderHistory(customerId: number) {
 
   // Get all orders for this customer
   const [orders]: any = await fastifyInstance.mysql.query(
-    'SELECT * FROM ims_sales WHERE customer_id = ? ORDER BY date DESC',
+    'SELECT * FROM uh_ims_sales WHERE customer_id = ? ORDER BY date DESC',
     [customerId]
   );
 
@@ -430,8 +430,8 @@ export async function getCustomerOrderHistory(customerId: number) {
     // Fetch items for this order
     const [items]: any = await fastifyInstance.mysql.query(
       `SELECT si.*, p.name as product_name 
-       FROM ims_sale_items si
-       JOIN ims_products p ON si.product_id = p.id
+       FROM uh_ims_sale_items si
+       JOIN uh_ims_products p ON si.product_id = p.id
        WHERE si.sale_id = ?`,
       [order.id]
     );

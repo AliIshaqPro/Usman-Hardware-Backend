@@ -157,7 +157,7 @@ export async function getAuditLogs(params: AuditLogsParams) {
       ip_address,
       user_agent,
       created_at
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     ${whereClause}
     ORDER BY ${validSortBy} ${validSortOrder}
     LIMIT ? OFFSET ?
@@ -169,7 +169,7 @@ export async function getAuditLogs(params: AuditLogsParams) {
   // Count query
   const countQuery = `
     SELECT COUNT(*) as total
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     ${whereClause}
   `;
 
@@ -195,7 +195,7 @@ export async function getAuditLogs(params: AuditLogsParams) {
  */
 export async function getAuditLog(logId: number) {
   const [logs]: any = await fastifyInstance.mysql.query(
-    'SELECT * FROM uh_ims_audit_log WHERE id = ?',
+    'SELECT * FROM  uh_ims_audit_log WHERE id = ?',
     [logId]
   );
 
@@ -219,7 +219,7 @@ export async function getRecordAuditHistory(
 
   // Get audit history
   const [logs]: any = await fastifyInstance.mysql.query(
-    `SELECT * FROM uh_ims_audit_log 
+    `SELECT * FROM  uh_ims_audit_log 
      WHERE table_name = ? AND record_id = ? 
      ORDER BY created_at DESC 
      LIMIT ? OFFSET ?`,
@@ -228,7 +228,7 @@ export async function getRecordAuditHistory(
 
   // Get total count
   const [countResult]: any = await fastifyInstance.mysql.query(
-    'SELECT COUNT(*) as total FROM uh_ims_audit_log WHERE table_name = ? AND record_id = ?',
+    'SELECT COUNT(*) as total FROM  uh_ims_audit_log WHERE table_name = ? AND record_id = ?',
     [table, recordId]
   );
 
@@ -258,7 +258,7 @@ export async function getUserAuditLogs(userId: number, page: number, limit: numb
 
   // Get user info (assuming you have a users table or accounts table)
   const [users]: any = await fastifyInstance.mysql.query(
-    'SELECT id, username as user_login, email FROM ims_accounts WHERE id = ?',
+    'SELECT id, username as user_login, email FROM uh_ims_accounts WHERE id = ?',
     [userId]
   );
 
@@ -270,7 +270,7 @@ export async function getUserAuditLogs(userId: number, page: number, limit: numb
 
   // Get audit logs
   const [logs]: any = await fastifyInstance.mysql.query(
-    `SELECT * FROM uh_ims_audit_log 
+    `SELECT * FROM  uh_ims_audit_log 
      WHERE user_id = ? 
      ORDER BY created_at DESC 
      LIMIT ? OFFSET ?`,
@@ -279,7 +279,7 @@ export async function getUserAuditLogs(userId: number, page: number, limit: numb
 
   // Get total count
   const [countResult]: any = await fastifyInstance.mysql.query(
-    'SELECT COUNT(*) as total FROM uh_ims_audit_log WHERE user_id = ?',
+    'SELECT COUNT(*) as total FROM  uh_ims_audit_log WHERE user_id = ?',
     [userId]
   );
 
@@ -294,7 +294,7 @@ export async function getUserAuditLogs(userId: number, page: number, limit: numb
       COUNT(CASE WHEN action = 'DELETE' THEN 1 END) as deletes,
       MIN(created_at) as first_action,
       MAX(created_at) as last_action
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     WHERE user_id = ?`,
     [userId]
   );
@@ -344,7 +344,7 @@ export async function getAuditStats(days: number) {
       COUNT(DISTINCT user_id) as unique_users,
       MIN(created_at) as oldest_entry,
       MAX(created_at) as newest_entry
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
   `);
 
   // Recent activity
@@ -354,7 +354,7 @@ export async function getAuditStats(days: number) {
       COUNT(CASE WHEN action = 'INSERT' THEN 1 END) as recent_inserts,
       COUNT(CASE WHEN action = 'UPDATE' THEN 1 END) as recent_updates,
       COUNT(CASE WHEN action = 'DELETE' THEN 1 END) as recent_deletes
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
     [days]
   );
@@ -367,7 +367,7 @@ export async function getAuditStats(days: number) {
       COUNT(CASE WHEN action = 'INSERT' THEN 1 END) as inserts,
       COUNT(CASE WHEN action = 'UPDATE' THEN 1 END) as updates,
       COUNT(CASE WHEN action = 'DELETE' THEN 1 END) as deletes
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     GROUP BY table_name
     ORDER BY change_count DESC
     LIMIT 10
@@ -382,7 +382,7 @@ export async function getAuditStats(days: number) {
       COUNT(CASE WHEN action = 'INSERT' THEN 1 END) as inserts,
       COUNT(CASE WHEN action = 'UPDATE' THEN 1 END) as updates,
       COUNT(CASE WHEN action = 'DELETE' THEN 1 END) as deletes
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     WHERE user_login != 'system'
     GROUP BY user_login, user_id
     ORDER BY action_count DESC
@@ -397,7 +397,7 @@ export async function getAuditStats(days: number) {
       COUNT(CASE WHEN action = 'INSERT' THEN 1 END) as inserts,
       COUNT(CASE WHEN action = 'UPDATE' THEN 1 END) as updates,
       COUNT(CASE WHEN action = 'DELETE' THEN 1 END) as deletes
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
     GROUP BY DATE(created_at)
     ORDER BY date DESC
@@ -459,7 +459,7 @@ export async function getAuditedTables() {
       COUNT(*) as entry_count,
       MIN(created_at) as first_entry,
       MAX(created_at) as last_entry
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     GROUP BY table_name
     ORDER BY table_name ASC
   `);
@@ -486,7 +486,7 @@ export async function getAuditUsers() {
       COUNT(*) as action_count,
       MIN(created_at) as first_action,
       MAX(created_at) as last_action
-    FROM uh_ims_audit_log
+    FROM  uh_ims_audit_log
     GROUP BY user_id, user_login
     ORDER BY action_count DESC
   `);

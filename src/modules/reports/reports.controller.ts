@@ -1,5 +1,52 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import * as reportsService from './reports.service.js';
+import { getSalesReport } from './sales-reports.service.js';
+import { getInventoryReport } from './inventory-reports.service.js';
+
+interface SalesReportQuery {
+  period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  dateFrom?: string;
+  dateTo?: string;
+  groupBy?: 'date' | 'product' | 'customer' | 'category';
+}
+
+export async function getSalesReportHandler(
+  request: FastifyRequest<{ Querystring: SalesReportQuery }>,
+  reply: FastifyReply
+) {
+  try {
+    const report = await getSalesReport(request.query);
+    return reply.send({
+      success: true,
+      data: report
+    });
+  } catch (error: any) {
+    request.log.error(error);
+    return reply.status(500).send({
+      success: false,
+      message: error.message
+    });
+  }
+}
+
+export async function getInventoryReportHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const report = await getInventoryReport();
+    return reply.send({
+      success: true,
+      data: report
+    });
+  } catch (error: any) {
+    request.log.error(error);
+    return reply.status(500).send({
+      success: false,
+      message: error.message
+    });
+  }
+}
 
 
 interface MonthlyProductSalesQuery {
