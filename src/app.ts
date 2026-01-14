@@ -13,6 +13,9 @@ import inventoryRoutes from './modules/inventory/inventory.routes.js';
 import { setFastifyInstance as setAuditFastifyInstance } from './modules/audit-logs/audit.service.js';
 import dbPlugin from './plugins/db.plugin.js';
 import outsourcingRoutes from './modules/outsourcing/outsourcing.routes.js';
+import suppliersRoutes from './modules/suppliers/suppliers.routes.js';
+import salesRoutes from './modules/sales/sales.routes.js';
+import settingsRoutes from './modules/settings/settings.routes.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true })
@@ -32,6 +35,9 @@ export async function buildApp() {
   app.register(employeeRoutes, { prefix });
   app.register(accountsRoutes, { prefix });
   app.register(outsourcingRoutes, { prefix });
+  app.register(suppliersRoutes, { prefix });
+  app.register(salesRoutes, { prefix });
+  app.register(settingsRoutes, { prefix });
 
   // Set Fastify instance for services
   setFastifyInstance(app)

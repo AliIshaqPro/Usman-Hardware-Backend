@@ -1,6 +1,15 @@
 import { FastifyInstance } from 'fastify';
-import { getInventoryHandler, getInventoryLogsHandler } from './inventory.controller.js';
-import { getInventoryLogsQuerySchema, inventoryLogsResponseSchema, getInventoryQuerySchema, inventoryListResponseSchema } from './inventory.schema.js';
+import { getInventoryHandler, getInventoryLogsHandler, getInventoryMovementsHandler, restockInventoryHandler } from './inventory.controller.js';
+import {
+    getInventoryLogsQuerySchema,
+    inventoryLogsResponseSchema,
+    getInventoryQuerySchema,
+    inventoryListResponseSchema,
+    getInventoryMovementsQuerySchema,
+    inventoryMovementsResponseSchema,
+    restockInventoryBodySchema,
+    restockInventoryResponseSchema
+} from './inventory.schema.js';
 
 export default async function inventoryRoutes(fastify: FastifyInstance) {
     fastify.get(
@@ -23,5 +32,27 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
             }
         },
         getInventoryLogsHandler
+    );
+
+    fastify.get(
+        '/inventory/movements',
+        {
+            schema: {
+                querystring: getInventoryMovementsQuerySchema,
+                response: inventoryMovementsResponseSchema
+            }
+        },
+        getInventoryMovementsHandler
+    );
+
+    fastify.post(
+        '/inventory/restock',
+        {
+            schema: {
+                body: restockInventoryBodySchema,
+                response: restockInventoryResponseSchema
+            }
+        },
+        restockInventoryHandler
     );
 }

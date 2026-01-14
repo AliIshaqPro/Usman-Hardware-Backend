@@ -1,5 +1,17 @@
 import { FastifySchema } from 'fastify';
 
+export const getInventoryMovementsQuerySchema = {
+    type: 'object',
+    properties: {
+        page: { type: 'integer', default: 1 },
+        limit: { type: 'integer', default: 20 },
+        productId: { type: 'integer' },
+        type: { type: 'string' },
+        dateFrom: { type: 'string', format: 'date' },
+        dateTo: { type: 'string', format: 'date' }
+    }
+};
+
 export const getInventoryLogsQuerySchema = {
     type: 'object',
     properties: {
@@ -121,6 +133,85 @@ export const inventoryListResponseSchema = {
                     }
                 }
             }
+        }
+    }
+};
+
+export const inventoryMovementsResponseSchema = {
+    200: {
+        type: 'object',
+        properties: {
+            success: { type: 'boolean' },
+            data: {
+                type: 'object',
+                properties: {
+                    movements: {
+                        type: 'array',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'integer' },
+                                productId: { type: 'integer' },
+                                productName: { type: 'string' },
+                                type: { type: 'string' },
+                                quantity: { type: 'number' },
+                                balanceBefore: { type: 'number' },
+                                balanceAfter: { type: 'number' },
+                                reference: { type: 'string', nullable: true },
+                                reason: { type: 'string', nullable: true },
+                                createdAt: { type: 'string' }
+                            }
+                        }
+                    },
+                    pagination: {
+                        type: 'object',
+                        properties: {
+                            currentPage: { type: 'integer' },
+                            totalPages: { type: 'integer' },
+                            totalItems: { type: 'integer' },
+                            itemsPerPage: { type: 'integer' }
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
+
+export const restockInventoryBodySchema = {
+    type: 'object',
+    required: ['productId', 'quantity'],
+    properties: {
+        productId: { type: 'integer' },
+        quantity: { type: 'number', minimum: 0.01 },
+        costPrice: { type: 'number', nullable: true },
+        supplierId: { type: 'integer', nullable: true },
+        purchaseOrderId: { type: 'integer', nullable: true },
+        notes: { type: 'string', nullable: true }
+    }
+};
+
+export const restockInventoryResponseSchema = {
+    200: {
+        type: 'object',
+        properties: {
+            success: { type: 'boolean' },
+            data: {
+                type: 'object',
+                properties: {
+                    newStock: { type: 'number' },
+                    movement: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'integer' },
+                            type: { type: 'string' },
+                            quantity: { type: 'number' },
+                            balanceAfter: { type: 'number' }
+                        }
+                    }
+                }
+            },
+            message: { type: 'string' }
         }
     }
 };
