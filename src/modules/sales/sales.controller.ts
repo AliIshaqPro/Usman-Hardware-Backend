@@ -2,6 +2,28 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import * as salesService from './sales.service.js';
 import { ReturnItemsInput, RevertOrderInput } from './sales.service.js';
 
+
+export async function createSaleHandler(req: FastifyRequest<{ Body: salesService.CreateSaleInput }>, reply: FastifyReply) {
+    try {
+        const data = await salesService.createSale(req.body);
+        return reply.status(201).send({ success: true, ...data });
+    } catch (error: any) {
+        req.log.error(error);
+        const status = error.message.includes('Insufficient stock') || error.message.includes('Product not found') ? 400 : 500;
+        return reply.status(status).send({ success: false, message: error.message });
+    }
+}
+
+export async function getSalesHandler(req: FastifyRequest, reply: FastifyReply) {
+    try {
+        const data = await salesService.getSales(req.query);
+        return reply.send({ success: true, ...data });
+    } catch (error: any) {
+        req.log.error(error);
+        return reply.status(500).send({ success: false, message: error.message });
+    }
+}
+
 export async function getOrderDetailsHandler(req: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) {
     try {
         const data = await salesService.getOrderDetails(req.params.id);

@@ -1,6 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import * as salesController from './sales.controller.js';
 import {
+    salesListResponseSchema,
+    createSaleBodySchema,
+    getSalesQuerySchema,
     orderDetailsResponseSchema,
     updateOrderStatusBodySchema,
     updateOrderDetailsBodySchema,
@@ -10,6 +13,30 @@ import {
 } from './sales.schema.js';
 
 export default async function salesRoutes(fastify: FastifyInstance) {
+
+    // POST /sales (Create Sale)
+    fastify.post(
+        '/sales',
+        {
+            schema: {
+                body: createSaleBodySchema
+                // response schema can be omitted or define a simple success one
+            }
+        },
+        salesController.createSaleHandler
+    );
+
+    // GET /sales (List Sales)
+    fastify.get(
+        '/sales',
+        {
+            schema: {
+                querystring: getSalesQuerySchema,
+                response: salesListResponseSchema
+            }
+        },
+        salesController.getSalesHandler
+    );
 
     // GET /sales/:id
     fastify.get(
