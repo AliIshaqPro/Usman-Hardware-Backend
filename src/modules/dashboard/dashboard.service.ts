@@ -748,7 +748,7 @@ export async function getProductsPerformance(query: any) {
         LIMIT ?
     `, [periodDays, limit]);
 
-    // Dead Products
+    // Dead Product
     const [deadProducts] = await pool.query<ProductPerformance[]>(`
         SELECT 
             p.id,
