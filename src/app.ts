@@ -20,6 +20,7 @@ import quotationsRoutes from './modules/quotations/quotations.routes.js';
 import purchaseOrdersRoutes from './modules/purchase-orders/purchase-orders.routes.js';
 import productsRoutes from './modules/products/products.routes.js';
 import customersRoutes from './modules/customers/customers.routes.js';
+import expensesRoutes from './modules/expenses/expenses.routes.js';
 import { setFastifyInstance as setAuditFastifyInstance } from './modules/audit-logs/audit.service.js';
 
 export async function buildApp() {
@@ -48,6 +49,7 @@ export async function buildApp() {
   app.register(purchaseOrdersRoutes, { prefix });
   app.register(productsRoutes, { prefix });
   app.register(customersRoutes, { prefix });
+  app.register(expensesRoutes, { prefix });
 
   // Set Fastify instance for services
   setFastifyInstance(app)
