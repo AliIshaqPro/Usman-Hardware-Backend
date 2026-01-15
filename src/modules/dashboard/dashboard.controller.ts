@@ -5,10 +5,7 @@ export async function getRevenueTrendHandler(request: FastifyRequest, reply: Fas
     try {
         const query = request.query as any;
         const data = await dashboardService.getRevenueTrend(query);
-        return reply.code(200).send({
-            success: true,
-            data
-        });
+        return reply.code(200).send(data);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
@@ -22,10 +19,7 @@ export async function getCategoryPerformanceHandler(request: FastifyRequest, rep
     try {
         const query = request.query as any;
         const data = await dashboardService.getCategoryPerformance(query);
-        return reply.code(200).send({
-            success: true,
-            data
-        });
+        return reply.code(200).send(data);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
@@ -39,10 +33,7 @@ export async function getDailySalesHandler(request: FastifyRequest, reply: Fasti
     try {
         const query = request.query as any;
         const data = await dashboardService.getDailySales(query);
-        return reply.code(200).send({
-            success: true,
-            data
-        });
+        return reply.code(200).send(data);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
@@ -55,10 +46,7 @@ export async function getDailySalesHandler(request: FastifyRequest, reply: Fasti
 export async function getInventoryStatusHandler(request: FastifyRequest, reply: FastifyReply) {
     try {
         const data = await dashboardService.getInventoryStatus();
-        return reply.code(200).send({
-            success: true,
-            data
-        });
+        return reply.code(200).send(data);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
@@ -71,11 +59,7 @@ export async function getInventoryStatusHandler(request: FastifyRequest, reply: 
 export async function getEnhancedStatsHandler(request: FastifyRequest, reply: FastifyReply) {
     try {
         const data = await dashboardService.getEnhancedStats();
-        return reply.code(200).send({
-            success: true,
-            data,
-            generated_at: new Date().toISOString()
-        });
+        return reply.code(200).send(data);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
@@ -88,14 +72,7 @@ export async function getEnhancedStatsHandler(request: FastifyRequest, reply: Fa
 export async function getWeeklyPerformanceTrendHandler(request: FastifyRequest, reply: FastifyReply) {
     try {
         const result = await dashboardService.getWeeklyPerformanceTrend();
-        return reply.code(200).send({
-            success: true,
-            ...result,
-            metadata: {
-                timestamp: new Date().toISOString(),
-                period: 'Last 12 Weeks'
-            }
-        });
+        return reply.code(200).send(result);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
@@ -109,15 +86,7 @@ export async function getRecentHighValueSalesHandler(request: FastifyRequest, re
     try {
         const query = request.query as any;
         const result = await dashboardService.getRecentHighValueSales(query);
-        return reply.code(200).send({
-            success: true,
-            ...result,
-            metadata: {
-                timestamp: new Date().toISOString(),
-                limit: parseInt(query.limit) || 15,
-                query_type: 'High-Value Recent Sales'
-            }
-        });
+        return reply.code(200).send(result);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
@@ -131,23 +100,7 @@ export async function getProductsPerformanceHandler(request: FastifyRequest, rep
     try {
         const query = request.query as any;
         const result = await dashboardService.getProductsPerformance(query);
-        const periodDays = parseInt(query.period_days) || 90;
-        const limit = parseInt(query.limit) || 15;
-
-        return reply.code(200).send({
-            success: true,
-            data: {
-                top_products: result.top_products,
-                dead_products: result.dead_products
-            },
-            summary: result.summary,
-            metadata: {
-                timestamp: new Date().toISOString(),
-                period_days: periodDays,
-                limit_per_category: limit,
-                analysis_period: `Last ${periodDays} days`
-            }
-        });
+        return reply.code(200).send(result);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({

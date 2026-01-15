@@ -18,23 +18,17 @@ export const topCustomersQuerySchema = {
 export const dashboardResponseSchema = {
     200: {
         type: 'object',
-        properties: {
-            success: { type: 'boolean' },
-            data: { type: 'object', additionalProperties: true }
-        }
+        additionalProperties: true
     }
 };
 
 // Generic response schema for array returns
 export const dashboardListResponseSchema = {
     200: {
-        type: 'object',
-        properties: {
-            success: { type: 'boolean' },
-            data: {
-                type: 'array',
-                items: { type: 'object', additionalProperties: true }
-            }
+        type: 'array',
+        items: {
+            type: 'object',
+            additionalProperties: true
         }
     }
 };

@@ -105,19 +105,19 @@ export async function getRevenueTrend(query: any) {
             DATE_FORMAT(date, ?) as period,
             SUM(total) as revenue,
             COUNT(*) as orders,
-            MIN(date) as date
+            MIN(date) as min_date
         FROM uh_ims_sales
         WHERE date BETWEEN ? AND ?
         AND status = 'completed'
-        GROUP BY ${groupFormat}
-        ORDER BY date ASC
+        GROUP BY period, ${groupFormat.includes('DATE(date)') ? 'DATE(date)' : groupFormat}
+        ORDER BY min_date ASC
     `, [dateFormat, startDate, endDate]);
 
     return rows.map(row => ({
         period: row.period,
-        revenue: parseFloat(row.revenue),
-        orders: parseInt(row.orders),
-        date: row.date
+        revenue: parseFloat(row.revenue || 0),
+        orders: parseInt(row.orders || 0),
+        date: row.min_date
     }));
 }
 
@@ -154,9 +154,9 @@ export async function getCategoryPerformance(query: any) {
 
     return rows.map(row => ({
         category: row.category || 'Uncategorized',
-        value: parseInt(row.value),
-        amount: parseFloat(row.amount),
-        unitsSold: parseInt(row.unitsSold)
+        value: parseInt(row.value || 0),
+        amount: parseFloat(row.amount || 0),
+        unitsSold: parseInt(row.unitsSold || 0)
     }));
 }
 
@@ -185,18 +185,18 @@ export async function getDailySales(query: any) {
         SELECT 
             DATE_FORMAT(date, '%a') as day,
             COALESCE(SUM(total), 0) as sales,
-            DATE(date) as date
+            DATE(date) as sale_date
         FROM uh_ims_sales
         WHERE date BETWEEN ? AND ?
         AND status = 'completed'
-        GROUP BY DATE(date)
-        ORDER BY date ASC
+        GROUP BY DATE(date), day
+        ORDER BY sale_date ASC
     `, [startDate, endDate]);
 
     // Create map for easy lookup
     const salesByDate: any = {};
     rows.forEach(row => {
-        salesByDate[row.date] = row;
+        salesByDate[row.sale_date] = row;
     });
 
     // Fill all days in range
@@ -206,14 +206,15 @@ export async function getDailySales(query: any) {
 
     while (current <= end) {
         const dateStr = current.toISOString().split('T')[0];
-        const dayName = current.toLocaleDateString('en-US', { weekday: 'short' });
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayName = dayNames[current.getDay()];
 
-        const sales = salesByDate[dateStr] ? parseFloat(salesByDate[dateStr].sales) : 0;
+        const sales = salesByDate[dateStr] ? parseFloat(salesByDate[dateStr].sales || 0) : 0;
 
         data.push({
             day: dayName,
             sales,
-            target: parseFloat(dailyTarget),
+            target: parseFloat(dailyTarget || 0),
             date: dateStr
         });
 
@@ -228,7 +229,7 @@ export async function getInventoryStatus() {
         SELECT 
             c.name as category,
             SUM(p.stock) as stock,
-            COALESCE(sold_data.sold, 0) as sold,
+            MAX(COALESCE(sold_data.sold, 0)) as sold,
             MIN(p.min_stock) as reorderLevel
         FROM uh_ims_products p
         LEFT JOIN uh_ims_categories c ON p.category_id = c.id
@@ -851,19 +852,19 @@ export async function getProductsPerformance(query: any) {
         summary: {
             top_products: {
                 count: topProductsData.length,
-                total_revenue: topProductsData.reduce((sum, p) => sum + Number(p.total_revenue), 0).toFixed(2),
-                total_profit: topProductsData.reduce((sum, p) => sum + Number(p.total_profit), 0).toFixed(2),
-                total_quantity_sold: topProductsData.reduce((sum, p) => sum + Number(p.total_quantity_sold), 0).toFixed(2),
+                total_revenue: topProductsData.reduce((sum, p) => sum + Number(p.total_revenue || 0), 0).toFixed(2),
+                total_profit: topProductsData.reduce((sum, p) => sum + Number(p.total_profit || 0), 0).toFixed(2),
+                total_quantity_sold: topProductsData.reduce((sum, p) => sum + Number(p.total_quantity_sold || 0), 0).toFixed(2),
                 avg_profit_margin: topProductsData.length > 0
-                    ? (topProductsData.reduce((sum, p) => sum + Number(p.profit_margin_percent), 0) / topProductsData.length).toFixed(2)
-                    : 0
+                    ? (topProductsData.reduce((sum, p) => sum + Number(p.profit_margin_percent || 0), 0) / topProductsData.length).toFixed(2)
+                    : "0.00"
             },
             dead_products: {
                 count: deadProductsData.length,
-                total_dead_stock_value: deadProductsData.reduce((sum, p) => sum + Number(p.dead_stock_value), 0).toFixed(2),
-                total_stock_units: deadProductsData.reduce((sum, p) => sum + Number(p.current_stock), 0).toFixed(2),
+                total_dead_stock_value: deadProductsData.reduce((sum, p) => sum + Number(p.dead_stock_value || 0), 0).toFixed(2),
+                total_stock_units: deadProductsData.reduce((sum, p) => sum + Number(p.current_stock || 0), 0).toFixed(2),
                 avg_days_since_sale: deadProductsData.length > 0
-                    ? Math.round(deadProductsData.reduce((sum, p) => sum + Number(p.days_since_last_sale), 0) / deadProductsData.length)
+                    ? Math.round(deadProductsData.reduce((sum, p) => sum + Number(p.days_since_last_sale || 0), 0) / deadProductsData.length)
                     : 0
             }
         }

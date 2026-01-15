@@ -64,6 +64,9 @@ export default async function dashboardRoutes(fastify: FastifyInstance) {
     // 18. Monthly Report
     fastify.get('/monthly-report', { schema: { response: dashboardListResponseSchema } }, dashboardController.getMonthlyReportHandler);
 
-    // 19. Backfill Profit Data
+    // 19. Monthly Category Performance
+    fastify.get('/monthly-category-performance', { schema: { response: dashboardListResponseSchema } }, dashboardController.getMonthlyCategoryPerformanceHandler);
+
+    // 20. Backfill Profit Data
     fastify.post('/profit/backfill', { schema: { response: profitBackfillResponseSchema } }, dashboardController.backfillProfitDataHandler);
 }

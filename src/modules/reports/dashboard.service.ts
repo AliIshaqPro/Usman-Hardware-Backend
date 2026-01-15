@@ -543,6 +543,29 @@ export async function getMonthlyReport() {
     return rows;
 }
 
+export async function getMonthlyCategoryPerformance() {
+    const query = `
+        SELECT 
+            c.name as category_name,
+            COUNT(DISTINCT s.id) as sales_count,
+            COALESCE(SUM(si.total), 0) as revenue,
+            COALESCE(SUM(CASE WHEN si.is_outsourced = 1 THEN si.quantity * COALESCE(si.outsourcing_cost_per_unit, prod.cost_price) ELSE si.quantity * prod.cost_price END), 0) as cogs,
+            COALESCE(SUM(si.total - (CASE WHEN si.is_outsourced = 1 THEN si.quantity * COALESCE(si.outsourcing_cost_per_unit, prod.cost_price) ELSE si.quantity * prod.cost_price END)), 0) as profit,
+            ROUND((COALESCE(SUM(si.total - (CASE WHEN si.is_outsourced = 1 THEN si.quantity * COALESCE(si.outsourcing_cost_per_unit, prod.cost_price) ELSE si.quantity * prod.cost_price END)), 0) / 
+                   NULLIF(COALESCE(SUM(si.total), 0), 0)) * 100, 2) as margin
+        FROM uh_ims_sales s
+        JOIN uh_ims_sale_items si ON s.id = si.sale_id
+        JOIN uh_ims_products prod ON si.product_id = prod.id
+        LEFT JOIN uh_ims_categories c ON prod.category_id = c.id
+        WHERE s.status = 'completed'
+        AND YEAR(s.date) = YEAR(CURDATE()) AND MONTH(s.date) = MONTH(CURDATE())
+        GROUP BY c.id, c.name
+        ORDER BY profit DESC
+    `;
+    const [rows] = await pool.query<RowDataPacket[]>(query);
+    return rows;
+}
+
 export async function backfillProfitData() {
     const connection = await pool.getConnection();
     try {

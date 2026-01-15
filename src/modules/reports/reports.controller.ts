@@ -16,10 +16,7 @@ export async function getSalesReportHandler(
 ) {
   try {
     const report = await getSalesReport(request.query);
-    return reply.send({
-      success: true,
-      data: report
-    });
+    return reply.send(report);
   } catch (error: any) {
     request.log.error(error);
     return reply.status(500).send({
@@ -35,10 +32,7 @@ export async function getInventoryReportHandler(
 ) {
   try {
     const report = await getInventoryReport();
-    return reply.send({
-      success: true,
-      data: report
-    });
+    return reply.send(report);
   } catch (error: any) {
     request.log.error(error);
     return reply.status(500).send({
@@ -109,17 +103,7 @@ export async function getMonthlyProductSalesReport(
       offset
     });
 
-    return reply.send({
-      success: true,
-      data: results,
-      count: (results as any[]).length,
-      params: {
-        year,
-        month,
-        limit,
-        offset
-      }
-    });
+    return reply.send(results);
   } catch (error: any) {
     request.log.error(error);
     return reply.status(500).send({
@@ -149,11 +133,7 @@ export async function getMonthlyCustomerPurchaseReport(
       offset
     });
 
-    return reply.send({
-      success: true,
-      data: results,
-      count: (results as any[]).length
-    });
+    return reply.send(results);
   } catch (error: any) {
     request.log.error(error);
     return reply.status(500).send({
@@ -182,11 +162,7 @@ export async function getMonthlyTopProducts(
       limit
     });
 
-    return reply.send({
-      success: true,
-      data: results,
-      count: (results as any[]).length
-    });
+    return reply.send(results);
   } catch (error: any) {
     request.log.error(error);
     return reply.status(500).send({
@@ -215,11 +191,7 @@ export async function getMonthlyTopCustomers(
       limit
     });
 
-    return reply.send({
-      success: true,
-      data: results,
-      count: (results as any[]).length
-    });
+    return reply.send(results);
   } catch (error: any) {
     request.log.error(error);
     return reply.status(500).send({
