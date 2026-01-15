@@ -23,6 +23,46 @@ export interface ProductPerformance extends RowDataPacket {
     rank?: number;
 }
 
+export interface WeeklyProfit extends RowDataPacket {
+    year: number;
+    week: number;
+    week_start_date: string;
+    week_end_date: string;
+    week_label: string;
+    date_range: string;
+    revenue: string;
+    cogs: string;
+    expenses: string;
+    profit: string;
+    sales_count: number;
+    profit_margin_percent: string;
+}
+
+export interface HighValueSale extends RowDataPacket {
+    id: number;
+    order_number: string;
+    sale_date: string;
+    sale_date_formatted: string;
+    sale_time: string;
+    total_amount: string;
+    subtotal: string;
+    discount: string;
+    tax: string;
+    payment_method: string;
+    status: string;
+    customer_id: number;
+    customer_name: string;
+    customer_phone: string;
+    customer_type: string;
+    items_count: number;
+    total_items_quantity: number;
+    total_cogs: string;
+    estimated_profit: string;
+    profit_margin_percent: string;
+    days_ago: number;
+    rank?: number;
+}
+
 export async function getRevenueTrend(query: any) {
     const period = query.period || '30days';
     let startDate = query.startDate;
@@ -606,7 +646,7 @@ async function getBusinessAlerts() {
 
 // Performance Analytics
 export async function getWeeklyPerformanceTrend() {
-    const [rows] = await pool.query<RowDataPacket[]>(`
+    const [rows] = await pool.query<WeeklyProfit[]>(`
         SELECT 
             year,
             week,
@@ -632,7 +672,7 @@ export async function getWeeklyPerformanceTrend() {
     const results = rows.reverse();
     const totalRevenue = results.reduce((sum, r) => sum + parseFloat(r.revenue), 0);
     const totalProfit = results.reduce((sum, r) => sum + parseFloat(r.profit), 0);
-    const totalSales = results.reduce((sum, r) => sum + parseInt(r.sales_count), 0);
+    const totalSales = results.reduce((sum, r) => sum + r.sales_count, 0);
     const avgProfitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue * 100) : 0;
 
     return {
@@ -651,7 +691,7 @@ export async function getRecentHighValueSales(query: any) {
     let limit = parseInt(query.limit) || 15;
     limit = Math.max(15, limit);
 
-    const [rows] = await pool.query<RowDataPacket[]>(`
+    const [rows] = await pool.query<HighValueSale[]>(`
         SELECT 
             s.id,
             s.order_number,
@@ -702,8 +742,8 @@ export async function getRecentHighValueSales(query: any) {
             average_value: avgValue.toFixed(2),
             total_profit: totalProfit.toFixed(2),
             avg_profit_margin: avgProfitMargin.toFixed(2),
-            highest_sale: results.length > 0 ? parseFloat(results[0].total_amount).toFixed(2) : 0,
-            lowest_sale: results.length > 0 ? parseFloat(results[results.length - 1].total_amount).toFixed(2) : 0
+            highest_sale: results.length > 0 ? parseFloat(results[0].total_amount).toFixed(2) : "0.00",
+            lowest_sale: results.length > 0 ? parseFloat(results[results.length - 1].total_amount).toFixed(2) : "0.00"
         }
     };
 }
