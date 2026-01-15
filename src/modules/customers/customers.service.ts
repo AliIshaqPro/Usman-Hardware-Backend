@@ -936,14 +936,34 @@ export async function bulkDeleteInactiveCustomers() {
 
 export async function getDuplicateCustomersByPhone() {
     const [results] = await pool.query<RowDataPacket[]>(`
-        CALL get_duplicate_customers_by_phone()
+        SELECT c1.* 
+        FROM uh_ims_customers c1
+        JOIN (
+            SELECT phone 
+            FROM uh_ims_customers 
+            WHERE phone IS NOT NULL AND phone != '' AND status = 'active'
+            GROUP BY phone 
+            HAVING COUNT(*) > 1
+        ) c2 ON c1.phone = c2.phone
+        WHERE c1.status = 'active'
+        ORDER BY c1.phone
     `);
     return results;
 }
 
 export async function getDuplicateCustomersByName() {
     const [results] = await pool.query<RowDataPacket[]>(`
-        CALL GetDuplicateCustomerNames()
+        SELECT c1.* 
+        FROM uh_ims_customers c1
+        JOIN (
+            SELECT name 
+            FROM uh_ims_customers 
+            WHERE name IS NOT NULL AND name != '' AND status = 'active'
+            GROUP BY name 
+            HAVING COUNT(*) > 1
+        ) c2 ON c1.name = c2.name
+        WHERE c1.status = 'active'
+        ORDER BY c1.name
     `);
     return results;
 }

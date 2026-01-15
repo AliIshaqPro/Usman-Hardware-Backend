@@ -14,16 +14,40 @@ export const topCustomersQuerySchema = {
     }
 };
 
-// Generic response schema for simple object returns
+// Generic response schema for simple object returns (Wrapped)
 export const dashboardResponseSchema = {
+    200: {
+        type: 'object',
+        properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object', additionalProperties: true }
+        }
+    }
+};
+
+// Generic response schema for array returns (Wrapped)
+export const dashboardListResponseSchema = {
+    200: {
+        type: 'object',
+        properties: {
+            success: { type: 'boolean' },
+            data: {
+                type: 'array',
+                items: { type: 'object', additionalProperties: true }
+            }
+        }
+    }
+};
+
+// Unwrapped variants for legacy/specific compatibility
+export const unwrappedResponseSchema = {
     200: {
         type: 'object',
         additionalProperties: true
     }
 };
 
-// Generic response schema for array returns
-export const dashboardListResponseSchema = {
+export const unwrappedListResponseSchema = {
     200: {
         type: 'array',
         items: {

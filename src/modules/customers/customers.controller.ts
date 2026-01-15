@@ -306,10 +306,7 @@ export async function bulkDeleteInactiveCustomersHandler(request: FastifyRequest
 export async function getDuplicateCustomersByPhoneHandler(request: FastifyRequest, reply: FastifyReply) {
     try {
         const data = await customersService.getDuplicateCustomersByPhone();
-        return reply.code(200).send({
-            success: true,
-            data
-        });
+        return reply.code(200).send(data);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
@@ -323,10 +320,7 @@ export async function getDuplicateCustomersByPhoneHandler(request: FastifyReques
 export async function getDuplicateCustomersByNameHandler(request: FastifyRequest, reply: FastifyReply) {
     try {
         const data = await customersService.getDuplicateCustomersByName();
-        return reply.code(200).send({
-            success: true,
-            data
-        });
+        return reply.code(200).send(data);
     } catch (error: any) {
         request.log.error(error);
         return reply.code(500).send({
