@@ -5,8 +5,8 @@ import { ReturnItemsInput, RevertOrderInput } from './sales.service.js';
 
 export async function createSaleHandler(req: FastifyRequest<{ Body: salesService.CreateSaleInput }>, reply: FastifyReply) {
     try {
-        const data = await salesService.createSale(req.body);
-        return reply.status(201).send({ success: true, ...data });
+        const { sale, message } = await salesService.createSale(req.body);
+        return reply.status(201).send({ success: true, data: sale, message });
     } catch (error: any) {
         req.log.error(error);
         const status = error.message.includes('Insufficient stock') || error.message.includes('Product not found') ? 400 : 500;
@@ -17,7 +17,7 @@ export async function createSaleHandler(req: FastifyRequest<{ Body: salesService
 export async function getSalesHandler(req: FastifyRequest, reply: FastifyReply) {
     try {
         const data = await salesService.getSales(req.query);
-        return reply.send({ success: true, ...data });
+        return reply.send({ success: true, data });
     } catch (error: any) {
         req.log.error(error);
         return reply.status(500).send({ success: false, message: error.message });

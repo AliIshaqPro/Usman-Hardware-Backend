@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { 
-  getProductSalesHistory, 
-  getCustomerOrderHistory, 
-  getMonthlySalesOverview 
+import {
+  getProductSalesHistory,
+  getCustomerOrderHistory,
+  getMonthlySalesOverview
 } from './reports.controller.js';
 
 export default async function apiHistoryRoutes(fastify: FastifyInstance) {
@@ -19,18 +19,6 @@ export default async function apiHistoryRoutes(fastify: FastifyInstance) {
     }
   }, getProductSalesHistory);
 
-  // 2. GET /customers/{id}/orders
-  fastify.get('/customers/:id/orders', {
-    schema: {
-      params: {
-        type: 'object',
-        properties: {
-          id: { type: 'number' }
-        },
-        required: ['id']
-      }
-    }
-  }, getCustomerOrderHistory);
 
   // 3. GET /monthly-sales-overview
   fastify.get('/monthly-sales-overview', {

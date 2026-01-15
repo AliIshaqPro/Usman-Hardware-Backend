@@ -16,6 +16,10 @@ import outsourcingRoutes from './modules/outsourcing/outsourcing.routes.js';
 import suppliersRoutes from './modules/suppliers/suppliers.routes.js';
 import salesRoutes from './modules/sales/sales.routes.js';
 import settingsRoutes from './modules/settings/settings.routes.js';
+import quotationsRoutes from './modules/quotations/quotations.routes.js';
+import purchaseOrdersRoutes from './modules/purchase-orders/purchase-orders.routes.js';
+import productsRoutes from './modules/products/products.routes.js';
+import customersRoutes from './modules/customers/customers.routes.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true })
@@ -38,6 +42,10 @@ export async function buildApp() {
   app.register(suppliersRoutes, { prefix });
   app.register(salesRoutes, { prefix });
   app.register(settingsRoutes, { prefix });
+  app.register(quotationsRoutes, { prefix });
+  app.register(purchaseOrdersRoutes, { prefix });
+  app.register(productsRoutes, { prefix });
+  app.register(customersRoutes, { prefix });
 
   // Set Fastify instance for services
   setFastifyInstance(app)

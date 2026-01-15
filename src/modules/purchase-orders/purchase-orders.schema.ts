@@ -1,11 +1,10 @@
 
-export const createQuotationBodySchema = {
+export const createPurchaseOrderBodySchema = {
     type: 'object',
-    required: ['customerId', 'items'],
+    required: ['supplierId', 'items'],
     properties: {
-        customerId: { type: 'integer' },
-        validUntil: { type: 'string', format: 'date', nullable: true }, // Optional in PHP, defaults to +30 days
-        discount: { type: 'number', default: 0 },
+        supplierId: { type: 'integer' },
+        expectedDelivery: { type: 'string', format: 'date', nullable: true },
         notes: { type: 'string', nullable: true },
         items: {
             type: 'array',
@@ -23,12 +22,12 @@ export const createQuotationBodySchema = {
     }
 };
 
-export const updateQuotationBodySchema = {
+export const updatePurchaseOrderBodySchema = {
     type: 'object',
     properties: {
-        customerId: { type: 'integer', nullable: true },
-        validUntil: { type: 'string', format: 'date', nullable: true },
-        discount: { type: 'number', nullable: true },
+        supplierId: { type: 'integer', nullable: true },
+        expectedDelivery: { type: 'string', format: 'date', nullable: true },
+        status: { type: 'string', enum: ['draft', 'sent', 'confirmed', 'cancelled'] },
         notes: { type: 'string', nullable: true },
         items: {
             type: 'array',
@@ -47,36 +46,49 @@ export const updateQuotationBodySchema = {
     }
 };
 
-export const updateQuotationStatusBodySchema = {
+export const receivePurchaseOrderBodySchema = {
     type: 'object',
-    required: ['status'],
+    required: ['items'],
     properties: {
-        status: { type: 'string', enum: ['accepted', 'rejected'] }
+        notes: { type: 'string', nullable: true },
+        items: {
+            type: 'array',
+            minItems: 1,
+            items: {
+                type: 'object',
+                required: ['productId', 'quantityReceived'],
+                properties: {
+                    productId: { type: 'integer' },
+                    quantityReceived: { type: 'number', minimum: 0 },
+                    condition: { type: 'string', enum: ['good', 'damaged'], default: 'good' }
+                }
+            }
+        }
     }
 };
 
-export const getQuotationsQuerySchema = {
+export const getPurchaseOrdersQuerySchema = {
     type: 'object',
     properties: {
         page: { type: 'integer', default: 1 },
         limit: { type: 'integer', default: 20 },
-        customerId: { type: 'integer' },
+        supplierId: { type: 'integer' },
         status: { type: 'string' },
-        quoteNumber: { type: 'string' },
         dateFrom: { type: 'string', format: 'date' },
-        dateTo: { type: 'string', format: 'date' }
+        dateTo: { type: 'string', format: 'date' },
+        search: { type: 'string' }
     }
 };
 
-export const quotationResponseSchema = {
+export const purchaseOrderResponseSchema = {
     type: 'object',
     properties: {
         id: { type: 'integer' },
-        quoteNumber: { type: 'string' },
-        customerId: { type: 'integer' },
-        customerName: { type: 'string', nullable: true },
+        orderNumber: { type: 'string' },
+        supplierId: { type: 'integer', nullable: true },
+        supplierName: { type: 'string', nullable: true },
         date: { type: 'string' },
-        validUntil: { type: 'string' },
+        expectedDelivery: { type: 'string', nullable: true },
         items: {
             type: 'array',
             items: {
@@ -87,21 +99,22 @@ export const quotationResponseSchema = {
                     productName: { type: 'string', nullable: true },
                     quantity: { type: 'number' },
                     unitPrice: { type: 'number' },
-                    total: { type: 'number' }
+                    total: { type: 'number' },
+                    quantityReceived: { type: 'number' },
+                    itemCondition: { type: 'string' }
                 }
             }
         },
-        subtotal: { type: 'number' },
-        discount: { type: 'number' },
         total: { type: 'number' },
         status: { type: 'string' },
         notes: { type: 'string', nullable: true },
-        createdBy: { type: 'string', nullable: true }, // PHP returns string name
-        createdAt: { type: 'string' }
+        createdBy: { type: 'string', nullable: true },
+        createdAt: { type: 'string' },
+        updatedAt: { type: 'string' }
     }
 };
 
-export const quotationsListResponseSchema = {
+export const purchaseOrdersListResponseSchema = {
     200: {
         type: 'object',
         properties: {
@@ -109,9 +122,9 @@ export const quotationsListResponseSchema = {
             data: {
                 type: 'object',
                 properties: {
-                    quotations: {
+                    purchaseOrders: {
                         type: 'array',
-                        items: quotationResponseSchema
+                        items: purchaseOrderResponseSchema
                     },
                     pagination: {
                         type: 'object',
@@ -128,12 +141,12 @@ export const quotationsListResponseSchema = {
     }
 };
 
-export const singleQuotationResponseSchema = {
+export const singlePurchaseOrderResponseSchema = {
     200: {
         type: 'object',
         properties: {
             success: { type: 'boolean' },
-            data: quotationResponseSchema
+            data: purchaseOrderResponseSchema
         }
     }
 };

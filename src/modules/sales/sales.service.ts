@@ -275,7 +275,11 @@ export async function createSale(input: CreateSaleInput) {
         }
 
         await connection.commit();
-        return { id: saleId, orderNumber, total, message: 'Sale created successfully' };
+        await connection.commit();
+
+        // Return full sale details
+        const createdSale = await getOrderDetails(saleId);
+        return { sale: createdSale, message: 'Sale created successfully' };
 
     } catch (error) {
         await connection.rollback();
@@ -287,10 +291,10 @@ export async function createSale(input: CreateSaleInput) {
 
 export async function getOrderDetails(orderId: number) {
     const [orders] = await pool.query<RowDataPacket[]>(`
-        SELECT s.*, c.name AS customer_name, u.username AS created_by
+        SELECT s.*, c.name AS customer_name, u.display_name AS created_by
         FROM uh_ims_sales s
         LEFT JOIN uh_ims_customers c ON s.customer_id = c.id
-        LEFT JOIN uh_ims_users u ON s.created_by = u.id
+        LEFT JOIN uh_users u ON s.created_by = u.ID
         WHERE s.id = ?
     `, [orderId]);
 
@@ -334,7 +338,7 @@ export async function updateOrderStatus(orderId: number, status: string) {
     if (existing.length === 0) throw new Error('Order not found');
 
     await pool.query('UPDATE uh_ims_sales SET status = ?, updated_at = NOW() WHERE id = ?', [status, orderId]);
-    return { id: orderId, status, updatedAt: new Date().toISOString() };
+    return await getOrderDetails(orderId);
 }
 
 export async function updateOrderDetails(orderId: number, updates: any) {
