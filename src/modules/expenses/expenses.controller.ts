@@ -29,14 +29,14 @@ export async function createScheduledExpenseHandler(request: FastifyRequest, rep
         return reply.code(200).send({
             success: true,
             data: {
-                id: parseInt(expense.id),
+                id: expense.id,
                 category: expense.category,
                 description: expense.description,
-                amount: parseFloat(expense.amount),
+                amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
                 frequency: expense.frequency,
                 next_execution: expense.next_execution,
                 status: expense.status,
-                account_id: parseInt(expense.account_id),
+                account_id: expense.account_id,
                 account_name: expense.account_name,
                 payment_method: expense.payment_method,
                 created_at: expense.created_at
@@ -60,14 +60,14 @@ export async function updateScheduledExpenseHandler(request: FastifyRequest, rep
         return reply.code(200).send({
             success: true,
             data: {
-                id: parseInt(expense.id),
+                id: expense.id,
                 category: expense.category,
                 description: expense.description,
-                amount: parseFloat(expense.amount),
+                amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
                 frequency: expense.frequency,
                 next_execution: expense.next_execution,
                 status: expense.status,
-                account_id: parseInt(expense.account_id),
+                account_id: expense.account_id,
                 account_name: expense.account_name,
                 payment_method: expense.payment_method,
                 updated_at: expense.updated_at
@@ -190,16 +190,16 @@ export async function createExpenseHandler(request: FastifyRequest, reply: Fasti
             success: true,
             message: 'Expense created successfully',
             data: {
-                id: parseInt(expense.id),
+                id: expense.id,
                 category: expense.category,
-                account_id: expense.account_id ? parseInt(expense.account_id) : null,
+                account_id: expense.account_id,
                 description: expense.description,
-                amount: parseFloat(expense.amount),
+                amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
                 date: expense.date,
                 reference: expense.reference,
                 payment_method: expense.payment_method,
                 receipt_url: expense.receipt_url,
-                created_by: expense.created_by ? parseInt(expense.created_by) : null,
+                created_by: expense.created_by,
                 created_at: expense.created_at
             }
         });
@@ -221,16 +221,16 @@ export async function updateExpenseHandler(request: FastifyRequest, reply: Fasti
             success: true,
             message: 'Expense updated successfully',
             data: {
-                id: parseInt(expense.id),
+                id: expense.id,
                 category: expense.category,
-                account_id: expense.account_id ? parseInt(expense.account_id) : null,
+                account_id: expense.account_id,
                 description: expense.description,
-                amount: parseFloat(expense.amount),
+                amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
                 date: expense.date,
                 reference: expense.reference,
                 payment_method: expense.payment_method,
                 receipt_url: expense.receipt_url,
-                created_by: expense.created_by ? parseInt(expense.created_by) : null,
+                created_by: expense.created_by,
                 created_at: expense.created_at
             }
         });
@@ -301,7 +301,7 @@ export async function createExpenseCategoryHandler(request: FastifyRequest, repl
         const result = await expensesService.createExpenseCategory(category);
         return reply.code(200).send({
             success: true,
-            message: 'Category can be used (categories are dynamic based on existing expenses)',
+            message: 'Expense category created successfully',
             data: result
         });
     } catch (error: any) {

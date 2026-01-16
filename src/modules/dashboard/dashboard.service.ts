@@ -160,69 +160,6 @@ export async function getCategoryPerformance(query: any) {
     }));
 }
 
-export async function getDailySales(query: any) {
-    const days = parseInt(query.days) || 7;
-    const start = new Date();
-    start.setDate(start.getDate() - days);
-    const startDate = start.toISOString().split('T')[0];
-    const endDate = new Date().toISOString().split('T')[0];
-
-    // Get daily target
-    const [targetRows] = await pool.query<RowDataPacket[]>(`
-        SELECT AVG(daily_total) * 1.2 as target
-        FROM (
-            SELECT DATE(date) as sale_date, SUM(total) as daily_total
-            FROM uh_ims_sales
-            WHERE date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-            AND status = 'completed'
-            GROUP BY DATE(date)
-        ) as daily_sales
-    `);
-    const dailyTarget = targetRows[0]?.target || 15000;
-
-    // Get actual sales
-    const [rows] = await pool.query<RowDataPacket[]>(`
-        SELECT 
-            DATE_FORMAT(date, '%a') as day,
-            COALESCE(SUM(total), 0) as sales,
-            DATE(date) as sale_date
-        FROM uh_ims_sales
-        WHERE date BETWEEN ? AND ?
-        AND status = 'completed'
-        GROUP BY DATE(date), day
-        ORDER BY sale_date ASC
-    `, [startDate, endDate]);
-
-    // Create map for easy lookup
-    const salesByDate: any = {};
-    rows.forEach(row => {
-        salesByDate[row.sale_date] = row;
-    });
-
-    // Fill all days in range
-    const data = [];
-    const current = new Date(startDate);
-    const end = new Date(endDate);
-
-    while (current <= end) {
-        const dateStr = current.toISOString().split('T')[0];
-        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const dayName = dayNames[current.getDay()];
-
-        const sales = salesByDate[dateStr] ? parseFloat(salesByDate[dateStr].sales || 0) : 0;
-
-        data.push({
-            day: dayName,
-            sales,
-            target: parseFloat(dailyTarget || 0),
-            date: dateStr
-        });
-
-        current.setDate(current.getDate() + 1);
-    }
-
-    return data;
-}
 
 export async function getInventoryStatus() {
     const [rows] = await pool.query<RowDataPacket[]>(`
@@ -256,6 +193,93 @@ export async function getInventoryStatus() {
         reorderLevel: parseFloat(row.reorderLevel)
     }));
 }
+
+export async function getDailySales(query: any) {
+    const days = parseInt(query.days) || 7;
+
+    // Helper to format date as YYYY-MM-DD in local time
+    const formatDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const today = new Date();
+    const start = new Date();
+    start.setDate(today.getDate() - days);
+
+    const startDate = formatDate(start);
+    const endDate = formatDate(today);
+
+    // Compute date range directly in SQL to avoid timezone mismatches
+    // We'll also retrieve the daily target in the same call
+    const [targetRows] = await pool.query<RowDataPacket[]>(`
+        SELECT AVG(daily_total) * 1.2 as target
+        FROM (
+            SELECT DATE(date) as sale_date, SUM(total) as daily_total
+            FROM uh_ims_sales
+            WHERE date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND status = 'completed'
+            GROUP BY DATE(date)
+        ) as daily_sales
+    `);
+    const dailyTarget = targetRows[0]?.target || 15000;
+
+    // Get actual sales for the past `days` days using MySQL date arithmetic
+    // DATE_FORMAT(date, '%Y-%m-%d') ensures we get a string back, matching our key format
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT 
+            DATE_FORMAT(date, '%Y-%m-%d') as sale_date,
+            DATE_FORMAT(date, '%a') as day,
+            COALESCE(SUM(total), 0) as sales
+        FROM uh_ims_sales
+        WHERE DATE(date) BETWEEN ? AND ?
+        AND status = 'completed'
+        GROUP BY sale_date, day
+        ORDER BY sale_date ASC
+    `, [startDate, endDate]);
+
+    // Build a lookup map keyed by the string YYYY‑MM‑DD
+    const salesByDate: Record<string, any> = {};
+    rows.forEach(row => {
+        // row.sale_date is already a string from DATE_FORMAT
+        salesByDate[row.sale_date] = row;
+    });
+
+    // Fill missing days with zero sales
+    const data = [];
+    const current = new Date(start);
+
+    // We need to iterate exactly through the range [start, today]
+    // Loop until current is > today
+    // Compare date strings to avoid time issues
+    const endStr = formatDate(today);
+
+    while (true) {
+        const dateStr = formatDate(current);
+        if (dateStr > endStr && current > today) break;
+
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayName = dayNames[current.getDay()];
+
+        const sales = salesByDate[dateStr]?.sales || 0;
+
+        data.push({
+            day: dayName,
+            sales: parseFloat(sales),
+            target: parseFloat(dailyTarget),
+            date: dateStr
+        });
+
+        if (dateStr === endStr) break;
+        current.setDate(current.getDate() + 1);
+    }
+
+    return data;
+}
+
+
 
 export async function getEnhancedStats() {
     const stats: any = {};

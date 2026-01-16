@@ -291,7 +291,7 @@ export async function createSale(input: CreateSaleInput) {
 
 export async function getOrderDetails(orderId: number) {
     const [orders] = await pool.query<RowDataPacket[]>(`
-        SELECT s.*, c.name AS customer_name, u.display_name AS created_by
+        SELECT s.*, c.name AS customer_name, CONCAT(u.first_name, ' ', u.last_name) AS created_by
         FROM uh_ims_sales s
         LEFT JOIN uh_ims_customers c ON s.customer_id = c.id
         LEFT JOIN uh_users u ON s.created_by = u.ID

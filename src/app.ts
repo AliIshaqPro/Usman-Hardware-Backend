@@ -24,7 +24,25 @@ import expensesRoutes from './modules/expenses/expenses.routes.js';
 import { setFastifyInstance as setAuditFastifyInstance } from './modules/audit-logs/audit.service.js';
 
 export async function buildApp() {
-  const app = Fastify({ logger: true })
+  const app = Fastify({
+    logger: true,
+    ajv: {
+      customOptions: {
+        allowUnionTypes: true
+      }
+    }
+  })
+
+  // Custom content type parser to allow empty body with Content-Type: application/json
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+    try {
+      const json = body ? JSON.parse(body as string) : {};
+      done(null, json);
+    } catch (err: any) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
 
   // Register plugins
   app.register(dbPlugin)
@@ -44,6 +62,7 @@ export async function buildApp() {
   app.register(outsourcingRoutes, { prefix });
   app.register(suppliersRoutes, { prefix });
   app.register(salesRoutes, { prefix });
+  app.register(salesRoutes); // Register without prefix to support frontend calls to /sales/...
   app.register(settingsRoutes, { prefix });
   app.register(quotationsRoutes, { prefix });
   app.register(purchaseOrdersRoutes, { prefix });

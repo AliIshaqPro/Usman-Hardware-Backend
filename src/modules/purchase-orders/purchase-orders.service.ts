@@ -100,7 +100,7 @@ export async function getPurchaseOrders(query: any) {
         SELECT 
             po.*,
             s.name as supplier_name,
-            u.display_name as created_by_name
+            CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM uh_ims_purchase_orders po
         LEFT JOIN uh_ims_suppliers s ON po.supplier_id = s.id
         LEFT JOIN uh_users u ON po.created_by = u.id
@@ -162,7 +162,7 @@ export async function getPurchaseOrder(id: number) {
         SELECT 
             po.*,
             s.name as supplier_name,
-            u.display_name as created_by_name
+            CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM uh_ims_purchase_orders po
         LEFT JOIN uh_ims_suppliers s ON po.supplier_id = s.id
         LEFT JOIN uh_users u ON po.created_by = u.id

@@ -1,6 +1,36 @@
 import { pool } from '../../config/database.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
+export interface Expense extends RowDataPacket {
+    id: number;
+    category: string;
+    account_id: number | null;
+    description: string;
+    amount: number | string;
+    date: any;
+    reference: string | null;
+    payment_method: string;
+    receipt_url: string | null;
+    created_by: number | null;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface ScheduledExpense extends RowDataPacket {
+    id: number;
+    category: string;
+    description: string;
+    amount: number | string;
+    frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    next_execution: string;
+    status: 'active' | 'inactive' | 'completed';
+    account_id: number | null;
+    payment_method: string;
+    created_at: string;
+    updated_at: string;
+    account_name?: string;
+}
+
 // Helper function to calculate next execution date
 function calculateNextExecution(frequency: string, startDate: string, lastExecuted?: string): string {
     const baseDate = lastExecuted || startDate;
@@ -123,7 +153,7 @@ export async function createScheduledExpense(data: any) {
         data.created_by || null
     ]);
 
-    const [expense] = await pool.query<RowDataPacket[]>(`
+    const [expense] = await pool.query<ScheduledExpense[]>(`
         SELECT se.*, a.account_name FROM uh_ims_scheduled_expenses se 
         LEFT JOIN uh_ims_accounts a ON se.account_id = a.id 
         WHERE se.id = ?
@@ -167,7 +197,7 @@ export async function updateScheduledExpense(id: number, data: any) {
         WHERE id = ?
     `, params);
 
-    const [updated] = await pool.query<RowDataPacket[]>(`
+    const [updated] = await pool.query<ScheduledExpense[]>(`
         SELECT se.*, a.account_name FROM uh_ims_scheduled_expenses se 
         LEFT JOIN uh_ims_accounts a ON se.account_id = a.id 
         WHERE se.id = ?
@@ -410,7 +440,7 @@ export async function getExpenses(query: any) {
             transaction_id: row.transaction_id ? parseInt(row.transaction_id) : null,
             description: row.description,
             amount: parseFloat(row.amount),
-            date: row.date,
+            date: row.date instanceof Date ? row.date.toISOString().split('T')[0] : row.date,
             reference: row.reference,
             payment_method: row.payment_method,
             receipt_url: row.receipt_url,
@@ -459,11 +489,14 @@ export async function createExpense(data: any) {
         data.created_by || null
     ]);
 
-    const [expense] = await pool.query<RowDataPacket[]>(`
+    const [expense] = await pool.query<Expense[]>(`
         SELECT * FROM uh_ims_expenses WHERE id = ?
     `, [result.insertId]);
 
-    return expense[0];
+    return {
+        ...expense[0],
+        date: expense[0].date instanceof Date ? expense[0].date.toISOString().split('T')[0] : expense[0].date
+    } as Expense;
 }
 
 export async function updateExpense(id: number, data: any) {
@@ -541,11 +574,14 @@ export async function updateExpense(id: number, data: any) {
         WHERE id = ?
     `, params);
 
-    const [expense] = await pool.query<RowDataPacket[]>(`
+    const [expense] = await pool.query<Expense[]>(`
         SELECT * FROM uh_ims_expenses WHERE id = ?
     `, [id]);
 
-    return expense[0];
+    return {
+        ...expense[0],
+        date: expense[0].date instanceof Date ? expense[0].date.toISOString().split('T')[0] : expense[0].date
+    } as Expense;
 }
 
 export async function deleteExpense(id: number) {
@@ -629,21 +665,23 @@ export async function getExpensesSummary(query: any) {
 
 export async function getExpenseCategories() {
     const [rows] = await pool.query<RowDataPacket[]>(`
-        SELECT DISTINCT category FROM uh_ims_expenses ORDER BY category
+        SELECT name FROM uh_ims_expense_categories ORDER BY name
     `);
 
-    return rows.map(row => row.category);
+    return rows.map(row => row.name);
 }
 
 export async function createExpenseCategory(category: string) {
     // Check if category already exists
     const [existing] = await pool.query<RowDataPacket[]>(`
-        SELECT COUNT(*) as count FROM uh_ims_expenses WHERE category = ?
+        SELECT COUNT(*) as count FROM uh_ims_expense_categories WHERE name = ?
     `, [category]);
 
     if (parseInt(existing[0].count) > 0) {
         throw new Error('Category already exists');
     }
+
+    await pool.query('INSERT INTO uh_ims_expense_categories (name) VALUES (?)', [category]);
 
     return { category };
 }
@@ -695,7 +733,7 @@ export async function exportExpenses(query: any) {
         'Account ID': row.account_id,
         'Description': row.description,
         'Amount': parseFloat(row.amount),
-        'Date': row.date,
+        'Date': row.date instanceof Date ? row.date.toISOString().split('T')[0] : row.date,
         'Reference': row.reference,
         'Payment Method': row.payment_method,
         'Receipt URL': row.receipt_url,

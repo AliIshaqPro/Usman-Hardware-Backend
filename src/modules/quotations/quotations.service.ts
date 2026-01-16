@@ -85,7 +85,7 @@ export async function getQuotations(query: any) {
         SELECT 
             q.*,
             c.name as customer_name,
-            u.display_name as created_by_name
+            CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM uh_ims_quotations q
         LEFT JOIN uh_ims_customers c ON q.customer_id = c.id
         LEFT JOIN uh_users u ON q.created_by = u.id
@@ -146,7 +146,7 @@ export async function getQuotation(id: number) {
         SELECT 
             q.*,
             c.name as customer_name,
-            u.display_name as created_by_name
+            CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM uh_ims_quotations q
         LEFT JOIN uh_ims_customers c ON q.customer_id = c.id
         LEFT JOIN uh_users u ON q.created_by = u.id
@@ -399,7 +399,7 @@ export async function convertQuotationToSale(id: number) {
         if (quotations.length === 0) throw new Error('Quotation not found');
         const q = quotations[0];
 
-        if (q.status !== 'sent') throw new Error('Only sent quotations can be converted to sales');
+        if (!['draft', 'sent', 'accepted'].includes(q.status)) throw new Error('Only draft, sent, or accepted quotations can be converted to sales');
         if (new Date(q.valid_until) < new Date()) throw new Error('Quotation has expired');
 
         const [items] = await connection.query<RowDataPacket[]>('SELECT * FROM uh_ims_quotation_items WHERE quotation_id = ?', [id]);

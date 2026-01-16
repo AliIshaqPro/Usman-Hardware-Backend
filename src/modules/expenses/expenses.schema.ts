@@ -1,14 +1,14 @@
 // Scheduled Expenses Schemas
 export const createScheduledExpenseBodySchema = {
     type: 'object',
-    required: ['category', 'amount', 'frequency', 'start_date', 'account_id', 'payment_method'],
+    required: ['category', 'amount', 'frequency', 'start_date', 'payment_method'],
     properties: {
         category: { type: 'string' },
         description: { type: 'string' },
         amount: { type: 'number' },
         frequency: { type: 'string', enum: ['daily', 'weekly', 'monthly', 'yearly'] },
         start_date: { type: 'string', format: 'date' },
-        account_id: { type: 'integer' },
+        account_id: { type: ['integer', 'string'] },
         payment_method: { type: 'string' },
         created_by: { type: 'integer' }
     }
@@ -21,7 +21,7 @@ export const updateScheduledExpenseBodySchema = {
         description: { type: 'string' },
         amount: { type: 'number' },
         frequency: { type: 'string', enum: ['daily', 'weekly', 'monthly', 'yearly'] },
-        account_id: { type: 'integer' },
+        account_id: { type: ['integer', 'string'] },
         payment_method: { type: 'string' }
     }
 };
@@ -58,7 +58,7 @@ export const createExpenseBodySchema = {
     required: ['category', 'amount', 'date', 'payment_method'],
     properties: {
         category: { type: 'string' },
-        account_id: { type: 'integer' },
+        account_id: { type: ['integer', 'string'] },
         description: { type: 'string' },
         amount: { type: 'number' },
         date: { type: 'string', format: 'date' },
@@ -89,7 +89,7 @@ export const getExpensesQuerySchema = {
         page: { type: 'integer', default: 1 },
         limit: { type: 'integer', default: 50 },
         category: { type: 'string' },
-        account_id: { type: 'integer' },
+        account_id: { type: ['integer', 'string'] },
         payment_method: { type: 'string' },
         date_from: { type: 'string', format: 'date' },
         date_to: { type: 'string', format: 'date' }
