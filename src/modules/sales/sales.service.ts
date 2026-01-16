@@ -449,6 +449,7 @@ export async function returnItems(orderId: number, input: ReturnItemsInput) {
         for (const item of input.items) {
             if (item.quantity <= 0) throw new Error('Return quantity must be positive');
 
+
             const [saleItems] = await connection.query<RowDataPacket[]>('SELECT * FROM uh_ims_sale_items WHERE sale_id = ? AND product_id = ?', [orderId, item.productId]);
             if (saleItems.length === 0) throw new Error(`Product ${item.productId} not found in order`);
             const saleItem = saleItems[0];
@@ -566,3 +567,4 @@ export async function revertOrder(orderId: number, input: RevertOrderInput) {
         connection.release();
     }
 }
+
