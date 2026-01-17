@@ -1,5 +1,8 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
+import fastifyJwt from '@fastify/jwt'
+import { authRoutes } from './modules/auth/auth.routes.js';
+import authPlugin from './plugins/auth.plugin.js';
 import monthlyReportsRoutes from './modules/reports/monthly-reports.routes.js';
 import { setFastifyInstance } from './modules/reports/reports.service.js';
 import apiHistoryRoutes from './modules/reports/api-history.routes.js';
@@ -46,6 +49,17 @@ export async function buildApp() {
 
   // Register plugins
   app.register(dbPlugin)
+  app.register(fastifyJwt, {
+    secret: process.env.JWT_SECRET || 'supersecret_change_me_in_prod'
+  })
+
+  app.after(() => {
+    console.log('JWT Plugin Registered. app.jwt exists:', !!app.jwt);
+  });
+
+  app.register(authPlugin)
+  // Register auth routes
+  app.register(authRoutes, { prefix: '/ims/v1' })
 
   // Register routes with prefix
   const prefix = '/ims/v1';
@@ -74,12 +88,15 @@ export async function buildApp() {
   setFastifyInstance(app)
   setAuditFastifyInstance(app)
 
+  // Add PNA header to allow requests from public domains (like Lovable) to localhost
+  app.addHook('onRequest', async (request, reply) => {
+    reply.header('Access-Control-Allow-Private-Network', 'true');
+  });
+
   await app.register(cors, {
-    origin: [
-      'http://localhost:8080',
-    ],
+    origin: true, // Reflects the request origin
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true,
   })
   return app
