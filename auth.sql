@@ -1240,3 +1240,233 @@ BEGIN
 END$
 
 DELIMITER ;
+DELIMITER $
+
+-- Procedure: Lock User Account
+DROP PROCEDURE IF EXISTS sp_lock_user_account$
+CREATE PROCEDURE sp_lock_user_account(
+  IN p_user_id BIGINT,
+  IN p_duration_minutes INT
+)
+BEGIN
+  UPDATE uh_users
+  SET status = 'locked',
+      account_locked_until = DATE_ADD(NOW(), INTERVAL p_duration_minutes MINUTE)
+  WHERE id = p_user_id;
+  
+  -- Terminate all active sessions
+  UPDATE uh_ims_user_sessions
+  SET is_active = FALSE,
+      terminated_at = NOW()
+  WHERE user_id = p_user_id
+    AND is_active = TRUE;
+END$
+
+-- Procedure: Log Login Attempt
+DROP PROCEDURE IF EXISTS sp_log_login_attempt$
+CREATE PROCEDURE sp_log_login_attempt(
+  IN p_user_id BIGINT,
+  IN p_username VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  IN p_email VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  IN p_success BOOLEAN,
+  IN p_failure_reason VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  IN p_ip_address VARCHAR(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
+  IN p_user_agent TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci
+)
+BEGIN
+  DECLARE v_risk_score INT DEFAULT 0;
+  DECLARE v_is_suspicious BOOLEAN DEFAULT FALSE;
+  DECLARE v_recent_failures INT;
+  DECLARE v_max_attempts INT DEFAULT 5;
+  DECLARE v_lockout_duration INT DEFAULT 30;
+  
+  -- Calculate risk score based on recent failures
+  SELECT COUNT(*) INTO v_recent_failures
+  FROM uh_ims_user_login_attempts
+  WHERE (user_id = p_user_id OR ip_address = p_ip_address)
+    AND success = FALSE
+    AND attempted_at > DATE_SUB(NOW(), INTERVAL 1 HOUR);
+  
+  SET v_risk_score = LEAST(v_recent_failures * 20, 100);
+  
+  IF v_recent_failures >= 3 THEN
+    SET v_is_suspicious = TRUE;
+  END IF;
+  
+  INSERT INTO uh_ims_user_login_attempts (
+    user_id, username_attempted, email_attempted, success,
+    failure_reason, ip_address, user_agent, risk_score, is_suspicious
+  ) VALUES (
+    p_user_id, p_username, p_email, p_success,
+    p_failure_reason, p_ip_address, p_user_agent, v_risk_score, v_is_suspicious
+  );
+  
+  -- Handle Success: Reset counters
+  IF p_success AND p_user_id IS NOT NULL THEN
+    UPDATE uh_users
+    SET failed_login_attempts = 0,
+        last_failed_login = NULL,
+        account_locked_until = NULL,
+        status = IF(status = 'locked', 'active', status)
+    WHERE id = p_user_id;
+  END IF;
+
+  -- Handle Failure: Increment and Check Lockout
+  IF NOT p_success AND p_user_id IS NOT NULL THEN
+    UPDATE uh_users
+    SET failed_login_attempts = failed_login_attempts + 1,
+        last_failed_login = NOW()
+    WHERE id = p_user_id;
+
+    -- Get Policy Values
+    SELECT CAST(policy_value AS UNSIGNED) INTO v_max_attempts
+    FROM uh_ims_security_policies 
+    WHERE policy_name = 'max_login_attempts';
+
+    SELECT CAST(policy_value AS UNSIGNED) INTO v_lockout_duration
+    FROM uh_ims_security_policies 
+    WHERE policy_name = 'account_lockout_duration';
+
+    -- Check if we should lock
+    IF (SELECT failed_login_attempts FROM uh_users WHERE id = p_user_id) >= IFNULL(v_max_attempts, 5) THEN
+       CALL sp_lock_user_account(p_user_id, IFNULL(v_lockout_duration, 30));
+    END IF;
+  END IF;
+END$
+
+-- Procedure: Check User Permissions (Included to ensure collation fix is present)
+DROP PROCEDURE IF EXISTS sp_check_user_permission$
+CREATE PROCEDURE sp_check_user_permission(
+  IN p_user_id BIGINT,
+  IN p_permission_name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci
+)
+BEGIN
+  SELECT 
+    COUNT(*) > 0 AS has_permission
+  FROM (
+    -- Permissions from roles
+    SELECT p.name
+    FROM uh_ims_permissions p
+    JOIN uh_ims_role_permissions rp ON p.id = rp.permission_id
+    JOIN uh_ims_user_roles ur ON rp.role_id = ur.role_id
+    WHERE ur.user_id = p_user_id
+      AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
+    
+    UNION
+    
+    -- Direct user permissions (grants)
+    SELECT p.name
+    FROM uh_ims_permissions p
+    JOIN uh_ims_user_permissions up ON p.id = up.permission_id
+    WHERE up.user_id = p_user_id
+      AND up.permission_type = 'grant'
+      AND (up.expires_at IS NULL OR up.expires_at > NOW())
+  ) AS all_permissions
+  WHERE name = p_permission_name
+    AND NOT EXISTS (
+      -- Check if permission is explicitly revoked
+      SELECT 1
+      FROM uh_ims_user_permissions up
+      JOIN uh_ims_permissions p ON up.permission_id = p.id
+      WHERE up.user_id = p_user_id
+        AND p.name = p_permission_name
+        AND up.permission_type = 'revoke'
+        AND (up.expires_at IS NULL OR up.expires_at > NOW())
+    );
+END$
+
+-- Procedure: Validate Session (Included to ensure collation fix is present)
+DROP PROCEDURE IF EXISTS sp_validate_session$
+CREATE PROCEDURE sp_validate_session(
+  IN p_session_token VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci
+)
+BEGIN
+  SELECT 
+    s.id AS session_id,
+    s.user_id,
+    u.username,
+    u.email,
+    u.status AS user_status,
+    s.is_active,
+    s.expires_at,
+    s.mfa_verified,
+    CASE 
+      WHEN u.status != 'active' THEN 'inactive_user'
+      WHEN s.expires_at < NOW() THEN 'expired'
+      WHEN NOT s.is_active THEN 'terminated'
+      ELSE 'valid'
+    END AS validation_status
+  FROM uh_ims_user_sessions s
+  JOIN uh_users u ON s.user_id = u.id
+  WHERE s.session_token = p_session_token;
+  
+  -- Update last activity
+  UPDATE uh_ims_user_sessions
+  SET last_activity = NOW()
+  WHERE session_token = p_session_token
+    AND is_active = TRUE;
+END$
+
+DELIMITER ;
+
+
+
+DROP FUNCTION IF EXISTS fn_get_audit_user_id;
+DELIMITER $$
+CREATE FUNCTION fn_get_audit_user_id()
+RETURNS INT
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    RETURN @audit_user_id;
+END$$
+DELIMITER ;
+
+DROP FUNCTION IF EXISTS fn_get_audit_user_login;
+DELIMITER $$
+CREATE FUNCTION fn_get_audit_user_login()
+RETURNS VARCHAR(255)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    RETURN @audit_user_login;
+END$$
+DELIMITER ;
+
+DROP FUNCTION IF EXISTS fn_get_audit_ip_address;
+DELIMITER $$
+CREATE FUNCTION fn_get_audit_ip_address()
+RETURNS VARCHAR(45)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    RETURN @audit_ip_address;
+END$$
+DELIMITER ;
+
+DROP FUNCTION IF EXISTS fn_get_audit_user_agent;
+DELIMITER $$
+CREATE FUNCTION fn_get_audit_user_agent()
+RETURNS VARCHAR(255)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    RETURN @audit_user_agent;
+END$$
+DELIMITER ;
+
+
+
+
+CREATE TABLE IF NOT EXISTS uh_ims_expense_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+INSERT IGNORE INTO uh_ims_expense_categories (name)
+SELECT DISTINCT category
+FROM uh_ims_expenses
+WHERE category IS NOT NULL
+  AND category != '';

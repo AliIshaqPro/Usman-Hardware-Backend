@@ -11,16 +11,10 @@ export async function authRoutes(fastify: FastifyInstance) {
     }, loginHandler);
 
     fastify.post('/logout', {
-        onRequest: [fastify.authenticate],
-        schema: {
-            security: [{ bearerAuth: [] }]
-        }
+        onRequest: [fastify.authenticate]
     }, logoutHandler);
 
     fastify.get('/me', {
-        onRequest: [fastify.authenticate],
-        schema: {
-            security: [{ bearerAuth: [] }]
-        }
+        onRequest: [fastify.authenticate]
     }, meHandler);
 }
