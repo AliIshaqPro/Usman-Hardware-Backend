@@ -17,5 +17,7 @@ jobs:
           script: |
             cd /home/ec2-user/backend
             git pull origin main
-            npm install --production
+            npm install
+            npm run build             # <--- Compile TypeScript to dist/
             pm2 restart backend
+            echo "Deployment completed successfully."
