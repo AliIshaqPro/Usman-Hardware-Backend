@@ -94,9 +94,9 @@ export async function buildApp() {
   });
 
   await app.register(cors, {
-    origin: true, // Reflects the request origin
+    origin: ['https://billionairesuit.store', 'http://localhost:3000', 'http://127.0.0.1:3000'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Request-Private-Network'],
     credentials: true,
   })
   return app
